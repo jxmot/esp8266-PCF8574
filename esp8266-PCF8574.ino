@@ -8,9 +8,26 @@
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 
+#define WRITE_OUTPUTS
+#ifdef WRITE_OUTPUTS
+#define WRITE_8BITS
+#endif
+
+#ifndef WRITE_OUTPUTS
 #define READ_INPUTS
 #define READ_8BITS
 #define USE_INTRR
+#endif 
+
+#ifdef WRITE_OUTPUTS
+// PCF857X code from -
+// https://github.com/WereCatf/PCF8574_ESP
+#include "src/pcf8574/pcf8574_esp.h"
+
+PCF857x pcf8574(0x21, &Wire);
+#endif
+
+void write8574(uint8_t, uint8_t);
 
 #ifdef READ_INPUTS
 // PCF857X code from -
@@ -21,10 +38,11 @@ PCF857x pcf8574(0x20, &Wire);
 
 uint8_t read8574(uint8_t);
 
+#endif
+
 #ifdef USE_INTRR
 // GPIO3
 uint8_t intrpin = 3;
-#endif
 #endif
 
 typedef struct {
@@ -70,6 +88,7 @@ void setup()
 #else
     Serial.begin(115200);
 #endif
+
     while (!Serial);
     Serial.println();
     Serial.println();
@@ -87,6 +106,19 @@ void setup()
 
 void loop()
 {
+
+#ifdef WRITE_OUTPUTS
+static uint8_t pinval = 0;
+#ifdef WRITE_8BITS
+    write8574(99, pinval);
+    pinval += 1;
+    if(pinval >= 16) pinval = 0;
+    delay(1000);
+#else
+static uint8_t pinid = 0;
+#endif
+#endif
+
 #ifdef READ_INPUTS
 static uint8_t pinid = 0;
 uint8_t pinval = 0;
@@ -154,6 +186,16 @@ uint8_t read8574(uint8_t pin = 99)
 #endif
 #endif // USE_INTRR
 }
+#endif  // READ_INPUTS
+
+void write8574(uint8_t pin, uint8_t val)
+{
+#ifdef WRITE_8BITS
+    pcf8574.write8(val);
+#else
+    pcf8574.write(pin, val);
+#endif
+}
 
 int lastError() 
 {
@@ -172,7 +214,6 @@ static char bnumb[9];
     }
     return bnumb;
 }
-#endif  // READ_INPUTS
 ///////////////////////////////////
 bool initI2C()
 {
