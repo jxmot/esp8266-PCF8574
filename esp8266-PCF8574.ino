@@ -11,6 +11,9 @@
 #define WRITE_OUTPUTS
 #ifdef WRITE_OUTPUTS
 #define WRITE_8BITS
+// define one or the other, not both
+//#define WRITE_COUNT
+#define WRITE_SHIFT
 #endif
 
 #ifndef WRITE_OUTPUTS
@@ -108,16 +111,30 @@ void loop()
 {
 
 #ifdef WRITE_OUTPUTS
-static uint8_t pinval = 0;
 #ifdef WRITE_8BITS
+#ifdef WRITE_COUNT
+static uint8_t pinval = 0;
+
     Serial.println("\write8574 - val : " + String(byte_to_binary(pinval)));
-    write8574(99, pinval);
+    write8574(99, ~pinval);
     pinval += 1;
     if(pinval >= 16) pinval = 0;
     delay(1000);
 #else
-static uint8_t pinid = 0;
+#ifdef WRITE_SHIFT
+static uint8_t pinval = 1;
+
+    Serial.println("\write8574 - val : " + String(byte_to_binary(pinval)));
+    write8574(99, ~pinval);
+    pinval <<= 1;
+    if(pinval >= 16) pinval = 1;
+    delay(1000);
 #endif
+#endif  // WRITE_COUNT
+
+#else   // WRITE_8BITS
+static uint8_t pinid = 0;
+#endif  // WRITE_8BITS
 #endif
 
 #ifdef READ_INPUTS
