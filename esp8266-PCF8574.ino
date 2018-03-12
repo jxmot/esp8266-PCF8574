@@ -110,6 +110,7 @@ void loop()
 #ifdef WRITE_OUTPUTS
 static uint8_t pinval = 0;
 #ifdef WRITE_8BITS
+    Serial.println("\write8574 - val : " + String(byte_to_binary(pinval)));
     write8574(99, pinval);
     pinval += 1;
     if(pinval >= 16) pinval = 0;
