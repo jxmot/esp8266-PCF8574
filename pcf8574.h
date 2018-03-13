@@ -11,6 +11,7 @@ class pcf8574 {
 
     public:
         pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)() = NULL);
+
         uint8_t read8574(uint8_t pin = 99);
         void write8574(uint8_t val, uint8_t pin = 99);
         int lastError();
@@ -18,14 +19,15 @@ class pcf8574 {
 
         PCF857x *p_pcf857x;
         byte I2Cerror;
+        bool intrenabled;
 
     private:
 
         static const GPIOPIN gpiopins[];
 
+        bool createDevice(uint8_t address);
         void initIntr(void (*ihandler)());
-
-        bool initI2C(String sda, String scl, uint8_t address, void (*ihandler)());
+        bool initI2C(String sda, String scl);
         uint8_t getPort(String gpioX);
 };
 

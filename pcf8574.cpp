@@ -18,10 +18,25 @@ const GPIOPIN pcf8574::gpiopins[] = {
 pcf8574::pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)())
 {
     p_pcf857x = NULL;
+    intrenabled = false;
+
     Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
-    if(initI2C(pinSDA, pinSCL, address, ihandler) == true) {
-        
+
+    if(initI2C(pinSDA, pinSCL) == true) {
+        if(createDevice(address)) initIntr(ihandler);
     }
+}
+
+bool pcf8574::createDevice(uint8_t address)
+{
+bool bRet = false;
+
+    if(p_pcf857x == NULL) {
+        if((bRet = checkForDevice(address)) == true) {
+            p_pcf857x = new PCF857x(address, &Wire);
+        }
+    }
+    return bRet;
 }
 
 uint8_t pcf8574::read8574(uint8_t pin) 
@@ -51,19 +66,23 @@ void pcf8574::initIntr(void (*ihandler)())
 {
 uint8_t intrpin = 3;
 
-    if(ihandler == NULL) {
-        p_pcf857x->begin();
-        p_pcf857x->resetInterruptPin();
-    } else {
-        p_pcf857x->begin();
-        pinMode(intrpin, FUNCTION_3);
-        pinMode(intrpin, INPUT_PULLUP);
-        p_pcf857x->resetInterruptPin();
-        attachInterrupt(digitalPinToInterrupt(intrpin), ihandler, FALLING);
+    if(p_pcf857x != NULL) {
+        if(ihandler == NULL) {
+            p_pcf857x->begin();
+            p_pcf857x->resetInterruptPin();
+            intrenabled = false;
+        } else {
+            p_pcf857x->begin();
+            pinMode(intrpin, FUNCTION_3);
+            pinMode(intrpin, INPUT_PULLUP);
+            p_pcf857x->resetInterruptPin();
+            intrenabled = true;
+            attachInterrupt(digitalPinToInterrupt(intrpin), ihandler, FALLING);
+        }
     }
 }
 
-bool pcf8574::initI2C(String sda, String scl, uint8_t address, void (*ihandler)())
+bool pcf8574::initI2C(String sda, String scl)
 {
 bool bRet = false;
 
@@ -72,8 +91,6 @@ bool bRet = false;
 
     if((sdapin != 99) && (sclpin != 99)) {
         Wire.begin(sdapin, sclpin);
-        p_pcf857x = new PCF857x(address, &Wire);
-        initIntr(ihandler);
         bRet = true;
     }
     return bRet;
