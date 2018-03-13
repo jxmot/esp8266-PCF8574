@@ -10,7 +10,7 @@ typedef struct {
 class pcf8574 {
 
     public:
-        pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)());
+        pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)() = NULL);
         uint8_t read8574(uint8_t pin = 99);
         void write8574(uint8_t val, uint8_t pin = 99);
         int lastError();

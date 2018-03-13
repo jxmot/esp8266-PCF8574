@@ -1,3 +1,5 @@
+/*
+*/
 #include <Wire.h>
 #include "pcf8574.h"
 
@@ -17,7 +19,7 @@ pcf8574::pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)
 {
     p_pcf857x = NULL;
     Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
-    if(initI2C("GPIO0", "GPIO2", 0x21, ihandler) == true) {
+    if(initI2C(pinSDA, pinSCL, address, ihandler) == true) {
         
     }
 }
@@ -49,11 +51,16 @@ void pcf8574::initIntr(void (*ihandler)())
 {
 uint8_t intrpin = 3;
 
-    p_pcf857x->begin();
-    pinMode(intrpin, FUNCTION_3);
-    pinMode(intrpin, INPUT_PULLUP);
-    p_pcf857x->resetInterruptPin();
-    attachInterrupt(digitalPinToInterrupt(intrpin), ihandler, FALLING);
+    if(ihandler == NULL) {
+        p_pcf857x->begin();
+        p_pcf857x->resetInterruptPin();
+    } else {
+        p_pcf857x->begin();
+        pinMode(intrpin, FUNCTION_3);
+        pinMode(intrpin, INPUT_PULLUP);
+        p_pcf857x->resetInterruptPin();
+        attachInterrupt(digitalPinToInterrupt(intrpin), ihandler, FALLING);
+    }
 }
 
 bool pcf8574::initI2C(String sda, String scl, uint8_t address, void (*ihandler)())
