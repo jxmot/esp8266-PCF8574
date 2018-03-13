@@ -8,224 +8,82 @@
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 
-#define I2C_SDA     0
-#define I2C_SCL     1
+#include "pcf8574.h"
 
-#define WRITE_OUTPUTS
-#ifdef WRITE_OUTPUTS
-#define WRITE_8BITS
-// define one or the other, not both
-//#define WRITE_COUNT
-#define WRITE_SHIFT
-#endif
+pcf8574 *p_pcf8574 = NULL;
 
-#ifndef WRITE_OUTPUTS
-#define READ_INPUTS
-#define READ_8BITS
-#define USE_INTRR
-#endif 
-
-#ifdef WRITE_OUTPUTS
-// PCF857X code from -
-// https://github.com/WereCatf/PCF8574_ESP
-#include "src/pcf8574/pcf8574_esp.h"
-
-PCF857x pcf8574(0x21, &Wire);
-#endif
-
-void write8574(uint8_t, uint8_t);
-
-#ifdef READ_INPUTS
-// PCF857X code from -
-// https://github.com/WereCatf/PCF8574_ESP
-#include "src/pcf8574/pcf8574_esp.h"
-
-PCF857x pcf8574(0x20, &Wire);
-
-uint8_t read8574(uint8_t);
-
-#endif
-
-#ifdef USE_INTRR
-// GPIO3
-uint8_t intrpin = 3;
-#endif
-
-typedef struct {
-    uint8_t pin;
-    String label;
-} GPIOPIN;
-
-const GPIOPIN gpiopins[] = {
-    {16, "GPIO16"},
-    { 5, "GPIO5"},
-    { 4, "GPIO4"},
-    { 0, "GPIO0"},
-    { 2, "GPIO2"},
-    {14, "GPIO14"},
-    {12, "GPIO12"},
-    {13, "GPIO13"},
-    {99, "END"}
-};
-
-///////////////////////////////////
-uint8_t I2Cports[2];
-byte I2Cerror;
-
-#ifdef READ_INPUTS
-const uint8_t MAX_DEVPINS = 8;
-#endif
-
-#ifdef USE_INTRR
-volatile bool intrFlag = false;
-
+//
+volatile bool intrFlag;
+//ICACHE_RAM_ATTR
 void ICACHE_RAM_ATTR intrHandler() 
 {
-  intrFlag = true;
+    intrFlag = true;
 }
-#endif
 
 void setup()
 {
     WiFi.mode(WIFI_OFF);
 
-#ifdef USE_INTRR
-    Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
-#else
-    Serial.begin(115200);
-#endif
+    p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x21, intrHandler);
 
     while (!Serial);
     Serial.println();
     Serial.println();
     Serial.println();
     Serial.println();
-    Serial.println("Looking for devices....");
-    if(initI2C() == true) {
-#ifdef READ_INPUTS
-        if(I2Caddrs() == true) initIntr();
-#else
-        I2Caddrs();
-#endif
-    } else Serial.println("FAIL - " + String(I2Cports[I2C_SDA]) + "   " + String(I2Cports[I2C_SCL]));
+    Serial.println("Starting.....");
 }
 
-void loop()
+void testCount()
 {
-
-#ifdef WRITE_OUTPUTS
-#ifdef WRITE_8BITS
-#ifdef WRITE_COUNT
 static uint8_t pinval = 0;
+int err = 0;
 
-    Serial.println("\write8574 - val : " + String(byte_to_binary(pinval)));
-    write8574(99, ~pinval);
+    Serial.println("testCount - val : " + String(byteToBin(pinval)));
+    p_pcf8574->write8574(~pinval);
     pinval += 1;
     if(pinval >= 16) pinval = 0;
-    delay(1000);
-#else
-#ifdef WRITE_SHIFT
-static uint8_t pinval = 1;
+    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testCount - ERROR = " + String(err));
+}
 
-    Serial.println("\write8574 - val : " + String(byte_to_binary(pinval)));
-    write8574(99, ~pinval);
+void testShift()
+{
+static uint8_t pinval = 1;
+int err = 0;
+
+    Serial.println("\testShift - val : " + String(byteToBin(pinval)));
+    p_pcf8574->write8574(~pinval);
     pinval <<= 1;
     if(pinval >= 16) pinval = 1;
-    delay(1000);
-#endif
-#endif  // WRITE_COUNT
+    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testShift - ERROR = " + String(err));
+}
 
-#else   // WRITE_8BITS
-static uint8_t pinid = 0;
-#endif  // WRITE_8BITS
-#endif
-
-#ifdef READ_INPUTS
-static uint8_t pinid = 0;
+void testRead() 
+{
+static uint8_t lastpinval = 0;
 uint8_t pinval = 0;
 int err = 0;
 
-#ifdef USE_INTRR
-    if(intrFlag == true) {
-        pinval = read8574(99);
-        Serial.println("read8574(intr) - val = " + String(byte_to_binary(pinval)));
-        intrFlag = false;
-    }
-#else   // USE_INTRR
-#ifdef READ_8BITS
-static uint8_t lastpinval = 0;
-
-    pinval = read8574(99);
+    pinval = p_pcf8574->read8574();
 
     if(lastpinval != pinval) {
-        Serial.println("\nread8574 - val : " + String(byte_to_binary(pinval)) + " last : " + String(byte_to_binary(lastpinval)));
+        Serial.println("\testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
         lastpinval = pinval;
     }
-#else
-    pinval = read8574(pinid);
+    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
+}
 
-    Serial.println("read8574 - pin = " + String(pinid) + "   val = " + String(pinval));
-    pinid += 1;
 
-    if(pinid >= MAX_DEVPINS) {
-        Serial.println("==================================");
-        pinid = 0;
-    }
-#endif  // READ_8BITS
-#endif  // USE_INTRR
-    if((err = lastError()) != PCF857x_OK) Serial.println("read8574 - ERROR = " + String(err));
+void loop()
+{
+    testCount();
     delay(250);
-#endif  // READ_INPUTS
     yield();
 }
 
 ///////////////////////////////////
-#ifdef READ_INPUTS
-void initIntr()
-{
-    pcf8574.begin();
-#ifdef USE_INTRR
-    pinMode(intrpin, FUNCTION_3);
-    pinMode(intrpin, INPUT_PULLUP);
-    pcf8574.resetInterruptPin();
-    attachInterrupt(digitalPinToInterrupt(intrpin), intrHandler, FALLING);
-#else
-    pcf8574.resetInterruptPin();
-#endif
-}
-
 ///////////////////////////////////
-
-uint8_t read8574(uint8_t pin = 99) 
-{
-#ifdef USE_INTRR
-    return pcf8574.read8();
-#else
-#ifdef READ_8BITS
-    return pcf8574.read8();
-#else
-    if(pin != 99) return pcf8574.read(pin);
-    else return 99;
-#endif
-#endif // USE_INTRR
-}
-#endif  // READ_INPUTS
-
-void write8574(uint8_t pin, uint8_t val)
-{
-#ifdef WRITE_8BITS
-    pcf8574.write8(val);
-#else
-    pcf8574.write(pin, val);
-#endif
-}
-
-int lastError() 
-{
-    return pcf8574.lastError();
-}
-
-const char *byte_to_binary(uint8_t val)
+const char *byteToBin(uint8_t val)
 {
 static char bnumb[9];
 
@@ -237,45 +95,6 @@ static char bnumb[9];
     }
     return bnumb;
 }
-///////////////////////////////////
-bool initI2C()
-{
-bool bRet = false;
-
-    if((bRet = getPorts("GPIO0", "GPIO2")) == true) {
-        Wire.begin(I2Cports[I2C_SDA], I2Cports[I2C_SCL]);
-        bRet = true;
-    }
-    return bRet;
-}
-
-bool getPorts(String gpio1, String gpio2)
-{
-bool bRet = false;
-
-    I2Cports[I2C_SDA] = I2Cports[I2C_SCL] = 99;
-    assignPort(gpio1, I2C_SDA);
-    assignPort(gpio2, I2C_SCL);
-
-    if((I2Cports[I2C_SDA] != 99) && (I2Cports[I2C_SCL] != 99)) {
-        bRet = true;
-    }
-    return bRet;
-}
-
-void assignPort(String gpioX, int portsIdx)
-{
-    for(int ix = 0;;ix++) {
-        if(gpiopins[ix].label == "END") {
-            I2Cports[portsIdx] = 99;
-            break;            
-        }
-        if(gpiopins[ix].label == gpioX) {
-            I2Cports[portsIdx] = gpiopins[ix].pin;
-            break;
-        }
-    }
-}
 
 ///////////////////////
 bool I2Caddrs() 
@@ -286,28 +105,16 @@ bool bRet = false;
 String found = "";
 
     for(addr = 1; addr < 127; addr++) {
-        if(checkForDevice(addr)) {
+        if(p_pcf8574->checkForDevice(addr)) {
             Serial.println("device found - addr : " + addrhex(addr));
             found = found + ((devqty > 0) ? "," : "") + addrhex(addr);
             devqty++;
-        } else if(I2Cerror != 2) Serial.println("device ERROR - addr : " + addrhex(addr) + ", code : " + String(I2Cerror));
+        } else if(p_pcf8574->I2Cerror != 2) Serial.println("device ERROR - addr : " + addrhex(addr) + ", code : " + String(p_pcf8574->I2Cerror));
     }
     if (devqty == 0) Serial.println("no devices found");
     else {
         bRet = true;
         Serial.println("qty : " + String(devqty) + ", addrs : " + found);
-    }
-    return bRet;
-}
-
-bool checkForDevice(byte addr)
-{
-bool bRet = false;
-
-    Wire.beginTransmission(addr);
-    I2Cerror = Wire.endTransmission();
-    if(I2Cerror == 0) {
-        bRet = true;
     }
     return bRet;
 }
