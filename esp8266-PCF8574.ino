@@ -24,7 +24,8 @@ void setup()
 {
     WiFi.mode(WIFI_OFF);
 
-    p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x21, intrHandler);
+    p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
+    //p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x21, intrHandler);
 
     while (!Serial);
     Serial.println();
@@ -51,7 +52,7 @@ void testShift()
 static uint8_t pinval = 1;
 int err = 0;
 
-    Serial.println("\testShift - val : " + String(byteToBin(pinval)));
+    Serial.println("testShift - val : " + String(byteToBin(pinval)));
     p_pcf8574->write8574(~pinval);
     pinval <<= 1;
     if(pinval >= 16) pinval = 1;
@@ -64,19 +65,21 @@ static uint8_t lastpinval = 0;
 uint8_t pinval = 0;
 int err = 0;
 
-    pinval = p_pcf8574->read8574();
-
-    if(lastpinval != pinval) {
-        Serial.println("\testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
-        lastpinval = pinval;
+    if(intrFlag == true) {
+        pinval = p_pcf8574->read8574();
+    
+        if(lastpinval != pinval) {
+            Serial.println("testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
+            lastpinval = pinval;
+        }
+        if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
     }
-    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
 }
 
 
 void loop()
 {
-    testCount();
+    testRead();
     delay(250);
     yield();
 }
