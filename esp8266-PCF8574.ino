@@ -10,7 +10,8 @@
 
 #include "pcf8574.h"
 
-pcf8574 *p_pcf8574 = NULL;
+pcf8574 *p_pcf8574_rd = NULL;
+pcf8574 *p_pcf8574_wr = NULL;
 
 //
 volatile bool intrFlag;
@@ -24,8 +25,8 @@ void setup()
 {
     WiFi.mode(WIFI_OFF);
 
-    p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
-    //p_pcf8574 = new pcf8574("GPIO0", "GPIO2", 0x21, intrHandler);
+    p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
+    p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
 
     while (!Serial);
     Serial.println();
@@ -41,10 +42,10 @@ static uint8_t pinval = 0;
 int err = 0;
 
     Serial.println("testCount - val : " + String(byteToBin(pinval)));
-    p_pcf8574->write8574(~pinval);
+    p_pcf8574_wr->write8574(~pinval);
     pinval += 1;
     if(pinval >= 16) pinval = 0;
-    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testCount - ERROR = " + String(err));
+    if((err = p_pcf8574_wr->lastError()) != PCF857x_OK) Serial.println("\ntestCount - ERROR = " + String(err));
 }
 
 void testShift()
@@ -53,10 +54,10 @@ static uint8_t pinval = 1;
 int err = 0;
 
     Serial.println("testShift - val : " + String(byteToBin(pinval)));
-    p_pcf8574->write8574(~pinval);
+    p_pcf8574_wr->write8574(~pinval);
     pinval <<= 1;
     if(pinval >= 16) pinval = 1;
-    if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testShift - ERROR = " + String(err));
+    if((err = p_pcf8574_wr->lastError()) != PCF857x_OK) Serial.println("\ntestShift - ERROR = " + String(err));
 }
 
 void testRead() 
@@ -66,19 +67,20 @@ uint8_t pinval = 0;
 int err = 0;
 
     if(intrFlag == true) {
-        pinval = p_pcf8574->read8574();
+        pinval = p_pcf8574_rd->read8574();
     
         if(lastpinval != pinval) {
             Serial.println("testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
             lastpinval = pinval;
         }
-        if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
+        if((err = p_pcf8574_rd->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
     }
 }
 
 
 void loop()
 {
+    testCount();
     testRead();
     delay(250);
     yield();
@@ -100,7 +102,7 @@ static char bnumb[9];
 }
 
 ///////////////////////
-bool I2Caddrs() 
+bool I2Caddrs(pcf8574 *p_pcf8574) 
 {
 byte addr;
 int devqty = 0;
