@@ -1,0 +1,12 @@
+{
+    "gpiopins" : [
+        {"label":"GPIO16","pin":16},
+        {"label":"GPIO5", "pin":5},
+        {"label":"GPIO4", "pin":4},
+        {"label":"GPIO0", "pin":0},
+        {"label":"GPIO2", "pin":2},
+        {"label":"GPIO14","pin":14},
+        {"label":"GPIO12","pin":12},
+        {"label":"GPIO13","pin":13}
+    ]
+}
