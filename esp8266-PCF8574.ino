@@ -1,6 +1,6 @@
 /* ************************************************************************ */
 /*
-    esp8266-PCF8574.ino - An ESP8266 application that communicates over I2Caddrs
+    esp8266-PCF8574.ino - An ESP8266 application that communicates over I2C
     to operate a PCF8574 expanded I/O device.
 */
 
@@ -10,20 +10,27 @@
 
 #include "pcf8574.h"
 
+// pointers to specific I2C devices, in this sketch one
+// is for reading switches and the other one toggles LEDs
 pcf8574 *p_pcf8574_rd = NULL;
 pcf8574 *p_pcf8574_wr = NULL;
 
-//
+// for interrupts that occur when an input changes
 volatile bool intrFlag;
-//ICACHE_RAM_ATTR
 void ICACHE_RAM_ATTR intrHandler() 
 {
     intrFlag = true;
 }
 
+/*
+*/
 void setup()
 {
     WiFi.mode(WIFI_OFF);
+
+    // force to true in case there is no interrupt handler,
+    // then read will always return something.
+    intrFlag = true;
 
     p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
     p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
@@ -36,6 +43,10 @@ void setup()
     Serial.println("Starting.....");
 }
 
+//////////////////////////////////////////////////////////////////////////////
+/*
+    Functions for testing read and write
+*/
 void testCount()
 {
 static uint8_t pinval = 0;
@@ -55,8 +66,7 @@ int err = 0;
 
     Serial.println("testShift - val : " + String(byteToBin(pinval)));
     p_pcf8574_wr->write8574(~pinval);
-    pinval <<= 1;
-    if(pinval >= 16) pinval = 1;
+    if((pinval <<= 1) >= 16) pinval = 1;
     if((err = p_pcf8574_wr->lastError()) != PCF857x_OK) Serial.println("\ntestShift - ERROR = " + String(err));
 }
 
@@ -68,7 +78,8 @@ int err = 0;
 
     if(intrFlag == true) {
         pinval = p_pcf8574_rd->read8574();
-    
+        // don't clear the flag unless interrupts have been enabled
+        if(p_pcf8574_rd->intrenabled == true) intrFlag = false;
         if(lastpinval != pinval) {
             Serial.println("testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
             lastpinval = pinval;
@@ -77,17 +88,9 @@ int err = 0;
     }
 }
 
-
-void loop()
-{
-    testCount();
-    testRead();
-    delay(250);
-    yield();
-}
-
-///////////////////////////////////
-///////////////////////////////////
+/*
+    Convert an 8 bit value into a string of 8 x 1's or 0's
+*/
 const char *byteToBin(uint8_t val)
 {
 static char bnumb[9];
@@ -101,34 +104,20 @@ static char bnumb[9];
     return bnumb;
 }
 
-///////////////////////
-bool I2Caddrs(pcf8574 *p_pcf8574) 
+//////////////////////////////////////////////////////////////////////////////
+/*
+*/
+int modcount = 0;
+
+void loop()
 {
-byte addr;
-int devqty = 0;
-bool bRet = false;
-String found = "";
+    // alternate between write tests...
+    if(((modcount += 1) % 30) > 15) testCount();
+    else testShift();
 
-    for(addr = 1; addr < 127; addr++) {
-        if(p_pcf8574->checkForDevice(addr)) {
-            Serial.println("device found - addr : " + addrhex(addr));
-            found = found + ((devqty > 0) ? "," : "") + addrhex(addr);
-            devqty++;
-        } else if(p_pcf8574->I2Cerror != 2) Serial.println("device ERROR - addr : " + addrhex(addr) + ", code : " + String(p_pcf8574->I2Cerror));
-    }
-    if (devqty == 0) Serial.println("no devices found");
-    else {
-        bRet = true;
-        Serial.println("qty : " + String(devqty) + ", addrs : " + found);
-    }
-    return bRet;
-}
+    testRead();
 
-String addrhex(byte addr)
-{
-char buf[17];
-
-    sprintf(buf,"0x%02X", addr);
-    return String(buf);
+    delay(250);
+    yield();
 }
 
