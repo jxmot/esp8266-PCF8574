@@ -8,6 +8,9 @@
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 
+#define I2C_SDA     0
+#define I2C_SCL     1
+
 #define WRITE_OUTPUTS
 #ifdef WRITE_OUTPUTS
 #define WRITE_8BITS
@@ -104,7 +107,7 @@ void setup()
 #else
         I2Caddrs();
 #endif
-    } else Serial.println("FAIL - " + String(I2Cports[0]) + "   " + String(I2Cports[1]));
+    } else Serial.println("FAIL - " + String(I2Cports[I2C_SDA]) + "   " + String(I2Cports[I2C_SCL]));
 }
 
 void loop()
@@ -238,7 +241,7 @@ bool initI2C()
 bool bRet = false;
 
     if((bRet = getPorts("GPIO0", "GPIO2")) == true) {
-        Wire.begin(I2Cports[0], I2Cports[1]);
+        Wire.begin(I2Cports[I2C_SDA], I2Cports[I2C_SCL]);
         bRet = true;
     }
     return bRet;
@@ -248,11 +251,11 @@ bool getPorts(String gpio1, String gpio2)
 {
 bool bRet = false;
 
-    I2Cports[0] = I2Cports[1] = 99;
-    assignPort(gpio1, 0);
-    assignPort(gpio2, 1);
+    I2Cports[I2C_SDA] = I2Cports[I2C_SCL] = 99;
+    assignPort(gpio1, I2C_SDA);
+    assignPort(gpio2, I2C_SCL);
 
-    if((I2Cports[0] != 99) && (I2Cports[1] != 99)) {
+    if((I2Cports[I2C_SDA] != 99) && (I2Cports[I2C_SCL] != 99)) {
         bRet = true;
     }
     return bRet;
