@@ -1,5 +1,7 @@
 /*
 */
+#pragma once
+
 #include "src/pcf8574/pcf8574_esp.h"
 
 typedef struct {
