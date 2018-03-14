@@ -107,7 +107,9 @@ For *this* project I situated the PCF8574 boards so that they share the same I2C
 That meant that I could have two individual PCF8574 *objects* and manage them separately - 
 
 ```
-// pointers to specific I2C devices, in this sketch one
+#include "pcf8574.h"
+
+// pointers to specific I2C device objects, in this sketch one
 // is for reading switches and the other one toggles LEDs
 pcf8574 *p_pcf8574_rd = NULL;
 pcf8574 *p_pcf8574_wr = NULL;
@@ -117,8 +119,8 @@ void setup()
 {
     // Change the GPIOx labels to suit your ESP8266 platform, those below
     // work on an ESP-01.
-    // 0x20 - the I2C address of the first device
-    // 0x21 - the I2C address of the second device
+    // 0x20 - the I2C address of the first device (swtiches)
+    // 0x21 - the I2C address of the second device (LEDs)
     p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
     p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
 }
@@ -134,6 +136,8 @@ volatile bool intrFlag;
 
 void ICACHE_RAM_ATTR intrHandler() 
 {
+    // will be reset to 'false' by calling
+    // testRead()
     intrFlag = true;
 }
 ```
@@ -142,16 +146,98 @@ The `ICACHE_RAM_ATTR` tells the linker to place the function into RAM instead of
 
 ## Read and Write
 
+There are three test functions found in `pcf8574-test.h / .c` - 
+
+* Read test - 
+    * `bool testRead(pcf8574 *, bool) ` - Reads the state of the buttons, displays it on the console and returns the new state of the interrupt flag. 
+* Write test - 
+    * `void testCount(pcf8574 *)` - Writes a binary pattern to the LEDs, and counts from 0 to 15 (`0000b` to `1111b`).
+    * `void testShift(pcf8574 *)` - Writes a binary pattern to the LEDs, shifts a single bit from LSB to MSB.
+    
+Where :
+* `pcf8574 *` is a pointer to a `pcf8574` object. It would have been created within `setup()`. See [Multiple Devices](#multiple-devices) for additional information.
+* `bool` is the current interrupt flag. The `testRead()` function will use it to determine if the inputs should be read. For that to happen `intrFlag` must be `true`. The function also returns a *new* value for the interrupt flag. That value is determined by checking `pcf8574->intrenabled`, if it is `true` then the interrupt flag is reset to `false`. Otherwise the function will return `true`. Here is some example code - 
+
+When the interrupt occurs the flag(**`intrFlag`**) is set to true -
+
+```
+void ICACHE_RAM_ATTR intrHandler() 
+{
+    intrFlag = true;
+}
+```
+
+Then in `loop()` the flag is passed to `testRead()` and checked there - 
+
+```
+    intrFlag = testRead(p_pcf8574_rd, intrFlag);
+```
+
+And inside of `testRead()` - 
+
+```
+bool testRead(pcf8574 *p_pcf8574, bool intr) 
+{
+bool iflag = false;
+static uint8_t lastpinval = 0;
+uint8_t pinval = 0;
+int err = 0;
+
+    // save the state of the interrupt flag and test for true
+    if((iflag = intr) == true) {
+        pinval = p_pcf8574->read8574();
+        // don't clear the flag unless interrupts have been enabled
+        if(p_pcf8574->intrenabled == true) iflag = false;
+        if(lastpinval != pinval) {
+            Serial.println("testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
+            lastpinval = pinval;
+        }
+        if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
+    }
+    // return the next interrupt flag state
+    return iflag;
+}
+```
 
 ## Platform Specific Modifications
 
+Depending on the ESP8266 platform you're using the only thing that might require modification is the choice of GPIO pins. This can be done in `setup()` by modifiying these lines - 
 
+```
+    // Change "GPIO0" and "GPIO2" to what is best suited for
+    // your ESP8266 platform - 
+    p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
+    p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
+```
 
 # Future
 
+This section is in essence my "*wish list*". Below are enhancements or changes I'd like to make, and projects that might be based of off the work done here.
+
 ## Configurability
 
+I'll add the ability to configure the following - 
+
+* GPIO pin selection - 
+    * GPIO pin table of labels <-> pin numbers
+    * GPIO pin selection for the application
+* PCF8574 definition - 
+    * quantity of devices on the I2C bus
+    * device address
+    * read/not read inputs when an interrupt occurs
+    * bitmask for ?
+* Additional things will become configurable as they're implemented.
+
 ## Network Connected
+
+* Uses WiFi (configurable)
+* Sends notifications (UDP) when an input changes state
+* Can receive -
+    * commands to cause -
+        * a reset, returns all outputs to an inactive state
+        * one or more outputs to change state
+        * polling the state of an input
+        * masking one or more inputs so that it will be ignored
 
 ## Preferred PCF8574 Circuit
 
@@ -184,6 +270,8 @@ In addition to regular old dart games I think I'll add some of these features al
 * Auto-heckling & cheering, let's say you're playing a game of *Cricket*. And you're trying to close out the 19's. If you hit the triple the game could congratulate you via a text-to-speech module, or if you keep missing it could also heckle you!
 
 ### Multiple Presence Sensors
+
+Use multiple presence sensors to determine occupancy of a space, or track a pet's movements within the monitored space. It's likely that I'll use sensors similar to what I used in my [RCWL-0516 project](https://github.com/jxmot/ESP8266-RCWL0516).
 
 
 
