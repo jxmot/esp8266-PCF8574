@@ -20,6 +20,10 @@ There are 5 basic components in this project -
 
 The rest is wire, breadboard(s), and a USB<->TTL converter board. And you should already have what you need to program your ESP8266. This project was originally built using an ESP-01S but I'm reasonable sure that most *any* ESP8266 platforms should work with minor modification to the code.
 
+<p align="center">
+  <img src="./mdimg/pcf8574-test-612x347.jpg" width="50%" alt="PCF8574 Project Circuit" title="PCF8574 Project Circuit" style="border: 2px solid black;"/>
+</p>
+
 ## Running the Sketch
 
 First you'll have to build the project [circuit](#circuit) before downloading and running the sketch. After downloading the compiled sketch open the IDE console and push some of the buttons. You should see something like this - 
