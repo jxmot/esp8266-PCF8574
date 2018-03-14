@@ -78,7 +78,7 @@ The *imporatnt* piece is the PCF8574 library that came from [WereCatf/PCF8574_ES
 Here's a basic diagram of the circuit used in this project - 
 
 <p align="center">
-  <img src="./mdimg/test-circuit.jpg" width="70%" alt="PCF8574 Project Circuit" title="PCF8574 Project Circuit" style="border: 2px solid black;"/>
+  <img src="./mdimg/test-circuit-1126x984.png" width="70%" alt="PCF8574 Project Circuit" title="PCF8574 Project Circuit" style="border: 2px solid black;"/>
 </p>
 
 <p align="center">
@@ -96,6 +96,11 @@ Here's the schematic HiLetgo-WaveShare PCF8574 I/O Expansion Board
 
 # Sketch Notes and Details
 
+## Multiple Devices
+
+## Interrupts
+
+## Platform Specific Modifications
 
 
 
@@ -115,10 +120,10 @@ After working with the [HiLetgo PCF8574 I/O Expansion Module](https://www.amazon
 * Add a jumper block to the interrupt line that connects from the input I2C connector to the output connector (used when daisy-chaining the boards)
 
 <p align="center">
-  <img src="./mdimg/prefered-circuit.jpg" width="70%" alt="Preferred PCF8574 Circuit" title="Preferred PCF8574 Circuit" style="border: 2px solid black;"/>
+  <img src="./mdimg/prefered-circuit-1158x986.png" width="70%" alt="Preferred PCF8574 Circuit" title="Preferred PCF8574 Circuit" style="border: 2px solid black;"/>
 </p>
 
-Initially I will create the boards myself using perf-boards. However I eventually would like to have some custome boards made.
+Initially I will create the boards myself using perf-boards. However I eventually would like to have some custom boards made.
 
 ## Future Project - WiFi Dart Board
 
@@ -129,6 +134,6 @@ So a *new* circuit will be built that monitors buttons and the *dart board switc
 In addition to regular old dart games I think I'll add some of these features along the way - 
 
 * Record player & game statistics in a database for later analysis.
-* Skill honing games, games and challenges designed to make you(or me!) a better dart player. Statistical data could also be save and analyzed.
+* Skill honing games, games and challenges designed to make you(or me!) a better dart player. Statistical data could also be saved and analyzed.
 * Auto-heckling & cheering, let's say you're playing a game of *Cricket*. And you're trying to close out the 19's. If you hit the triple the game could congratulate you via a text-to-speech module, or if you keep missing it could also heckle you!
 
