@@ -1,14 +1,20 @@
 /*
+    Encapsulates an object instantiated from the PCF857x class found in
+    src/pcf8574/pcf8574_esp.h
 */
 #pragma once
 
 #include "src/pcf8574/pcf8574_esp.h"
 
+// For mapping GPIOx text labels <-> GPIOx pin number
 typedef struct {
     uint8_t pin;
     String label;
 } GPIOPIN;
 
+/*
+        
+*/
 class pcf8574 {
 
     public:
