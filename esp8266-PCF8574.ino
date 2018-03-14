@@ -47,10 +47,10 @@ void setup()
 //////////////////////////////////////////////////////////////////////////////
 /*
 */
-int modcount = 0;
-
 void loop()
 {
+static int modcount = 0;
+
     // alternate between write tests...
     if(((modcount += 1) % 30) > 15) testCount(p_pcf8574_wr);
     else testShift(p_pcf8574_wr);
