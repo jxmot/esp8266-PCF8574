@@ -1,3 +1,8 @@
+/*
+    Test functions for the esp8266-PCF8574 sketch
+
+    https://github.com/jxmot/esp8266-PCF8574
+*/
 #include "pcf8574.h"
 
 #pragma once
