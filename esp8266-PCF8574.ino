@@ -33,15 +33,15 @@ void setup()
     // then read will always return something.
     intrFlag = true;
 
+    // Change the GPIOx labels to suit your ESP8266 platform
     p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
     p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
 
     while (!Serial);
     Serial.println();
     Serial.println();
-    Serial.println();
-    Serial.println();
     Serial.println("Starting.....");
+    Serial.flush();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -54,10 +54,12 @@ static int modcount = 0;
     // alternate between write tests...
     if(((modcount += 1) % 30) > 15) testCount(p_pcf8574_wr);
     else testShift(p_pcf8574_wr);
+    Serial.flush();
 
     // the test will manage the state of the
     // interrupt flag
     intrFlag = testRead(p_pcf8574_rd, intrFlag);
+    Serial.flush();
 
     delay(250);
     yield();
