@@ -18,7 +18,7 @@ There are 5 basic components in this project -
 * 4 of each : LEDs and 330R resistors
 * Software!
 
-The rest is wire, breadboard(s), and a USB<->TTL converter board. And you should already have what you need to program your ESP8266. This project was originally built using an ESP-01S but I'm reasonable sure that most *any* ESP8266 platforms should work with minor modification to the code.
+The rest is wire, breadboard(s), and a USB<->TTL converter board. And you should already have what you need to program your ESP8266. This project was originally built using an ESP-01S but I'm reasonably sure that most *any* ESP8266 platform should work with minor modifications to the code.
 
 <p align="center">
   <img src="./mdimg/pcf8574-test-612x347.jpg" width="50%" alt="PCF8574 Project Circuit" title="PCF8574 Project Circuit" style="border: 2px solid black;"/>
@@ -90,7 +90,7 @@ Here's a basic diagram of the circuit used in this project -
 </p>
 <br>
 
-Here's the schematic HiLetgo-WaveShare PCF8574 I/O Expansion Board
+Here's the schematic **HiLetgo-WaveShare PCF8574 I/O Expansion Board** that I used in this project - 
 
 <p align="center">
   <img src="./mdimg/PCF8574-schem-board-hiletgo-waveshare-1185x785.png" width="50%" alt="PCF8574 Expansion Board Schematic" title="PCF8574 Expansion Board Schematic" style="border: 2px solid black;"/>
@@ -102,7 +102,46 @@ Here's the schematic HiLetgo-WaveShare PCF8574 I/O Expansion Board
 
 ## Multiple Devices
 
+For *this* project I situated the PCF8574 boards so that they share the same I2C bus. There really wasn't any choice because of the limited pins on the EPS-01 for I2C use. I used one for reading inputs and the second one for output. 
+
+That meant that I could have two individual PCF8574 *objects* and manage them separately - 
+
+```
+// pointers to specific I2C devices, in this sketch one
+// is for reading switches and the other one toggles LEDs
+pcf8574 *p_pcf8574_rd = NULL;
+pcf8574 *p_pcf8574_wr = NULL;
+
+// setup() example -
+void setup()
+{
+    // Change the GPIOx labels to suit your ESP8266 platform, those below
+    // work on an ESP-01.
+    // 0x20 - the I2C address of the first device
+    // 0x21 - the I2C address of the second device
+    p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
+    p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
+}
+
+```
+
 ## Interrupts
+
+This sketch uses an interrupt to know when to read the inputs of a PCF8574. The handler is brief and resides in RAM when defined this way - 
+
+```
+volatile bool intrFlag;
+
+void ICACHE_RAM_ATTR intrHandler() 
+{
+    intrFlag = true;
+}
+```
+
+The `ICACHE_RAM_ATTR` tells the linker to place the function into RAM instead of SPI flash memory. It will run faster there, but it's still important to keep the time it takes as brief as possible.
+
+## Read and Write
+
 
 ## Platform Specific Modifications
 
@@ -116,12 +155,13 @@ Here's the schematic HiLetgo-WaveShare PCF8574 I/O Expansion Board
 
 ## Preferred PCF8574 Circuit
 
-After working with the [HiLetgo PCF8574 I/O Expansion Module](https://www.amazon.com/dp/B01ICN5JB6/?coliid=I8Q5ILRP7FTWQ&colid=1JJSTU3ZZ46WB&psc=0&ref_=lv_ov_lig_dp_it) I determined that I'd prefer a few modifications to the board - 
+After working with the [HiLetgo PCF8574 I/O Expansion Module](https://www.amazon.com/dp/B01ICN5JB6/?coliid=I8Q5ILRP7FTWQ&colid=1JJSTU3ZZ46WB&psc=0&ref_=lv_ov_lig_dp_it) I determined that I'd prefer a few modifications to the circuit - 
 
 * Bring power and ground out to the header row that contains the I/O pins
 * Remove the interrupt line from the header row that contains the I/O pins
 * Add the interrupt line to the connectors that contain the I2C lines, power, and ground
 * Add a jumper block to the interrupt line that connects from the input I2C connector to the output connector (used when daisy-chaining the boards)
+* Find a way to place 2.5mm mounting holes on at least 3 corners of the board
 
 <p align="center">
   <img src="./mdimg/prefered-circuit-1158x986.png" width="70%" alt="Preferred PCF8574 Circuit" title="Preferred PCF8574 Circuit" style="border: 2px solid black;"/>
@@ -129,7 +169,9 @@ After working with the [HiLetgo PCF8574 I/O Expansion Module](https://www.amazon
 
 Initially I will create the boards myself using perf-boards. However I eventually would like to have some custom boards made.
 
-## Future Project - WiFi Dart Board
+## Projects
+
+### WiFi Dart Board
 
 I will be using what I've learned from this project in a **WiFi Dart Board** project. It's a retrofit of an old *Arachnid* electronic *home model* dart board. Originally it had a TV connection cable and would display the game play on an *old standard television*. However it's not very suitable for use with the current flat-screen televisions or displays.
 
@@ -140,4 +182,8 @@ In addition to regular old dart games I think I'll add some of these features al
 * Record player & game statistics in a database for later analysis.
 * Skill honing games, games and challenges designed to make you(or me!) a better dart player. Statistical data could also be saved and analyzed.
 * Auto-heckling & cheering, let's say you're playing a game of *Cricket*. And you're trying to close out the 19's. If you hit the triple the game could congratulate you via a text-to-speech module, or if you keep missing it could also heckle you!
+
+### Multiple Presence Sensors
+
+
 
