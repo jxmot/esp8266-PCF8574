@@ -1,0 +1,21 @@
+{
+    "owner"    : "jxmot",
+    "repo"     : "esp8266-PCF8574",
+    "branch"   : "master",
+
+    "mdfilerem": true,
+    "mdfile"   : "README.md",
+
+    "pagetitle": "ESP8266 and PCF8574 Demonstration",
+
+    "gitdesc"  : true,
+    "metadesc" : "",
+
+    "gittopics": true,
+    "metakeyw" : "",
+
+    "metaauth" : "https://github.com/jxmot",
+
+    "genstatic": false,
+    "statname" : "./esp8266-PCF8574.html"
+}
