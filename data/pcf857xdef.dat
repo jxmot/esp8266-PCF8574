@@ -1,7 +1,9 @@
 {
     "type":"PCF8574",
     "maxpins": 8,
-    "maxdev": 1,
-    "useint": false,
-    "baseaddr": 0x20
+    "maxdev": 2,
+    "devs": [
+        {"useint": true, "baseaddr": 0x20, "mask": 0x0f},
+        {"useint": false, "baseaddr": 0x21, "mask": 0x0f}
+    ]
 }

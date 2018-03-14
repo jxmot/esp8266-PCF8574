@@ -7,6 +7,7 @@
         {"label":"GPIO2", "pin":2},
         {"label":"GPIO14","pin":14},
         {"label":"GPIO12","pin":12},
-        {"label":"GPIO13","pin":13}
+        {"label":"GPIO13","pin":13},
+        {"label":"END","pin":99}
     ]
 }
