@@ -36,6 +36,6 @@ class pcf8574 {
         bool createDevice(uint8_t address);
         void initIntr(void (*ihandler)());
         bool initI2C(String sda, String scl);
-        uint8_t getPort(String gpioX);
+        uint8_t getGPIOpin(String gpioX);
 };
 

@@ -23,14 +23,15 @@
 // table of GPIO labels to pin numbers
 // To Do : obtain from a config file
 const GPIOPIN pcf8574::gpiopins[] = {
-    {16, "GPIO16"},
-    { 5, "GPIO5"},
-    { 4, "GPIO4"},
     { 0, "GPIO0"},
     { 2, "GPIO2"},
-    {14, "GPIO14"},
+    { 3, "GPIO3"},
+    { 4, "GPIO4"},
+    { 5, "GPIO5"},
     {12, "GPIO12"},
     {13, "GPIO13"},
+    {14, "GPIO14"},
+    {16, "GPIO16"},
     {99, "END"}
 };
 
@@ -101,7 +102,7 @@ int pcf8574::lastError()
 */
 void pcf8574::initIntr(void (*ihandler)())
 {
-uint8_t intrpin = 3;
+uint8_t intrpin = getGPIOpin("GPIO3");
 
     if(p_pcf857x != NULL) {
         if(ihandler == NULL) {
@@ -131,8 +132,8 @@ bool pcf8574::initI2C(String sda, String scl)
 {
 bool bRet = false;
 
-    uint8_t sdapin = getPort(sda);
-    uint8_t sclpin = getPort(scl);
+    uint8_t sdapin = getGPIOpin(sda);
+    uint8_t sclpin = getGPIOpin(scl);
 
     if((sdapin != 99) && (sclpin != 99)) {
         Wire.begin(sdapin, sclpin);
@@ -145,7 +146,7 @@ bool bRet = false;
     Use the GPIO lookup table and find the GPIO pin
     label and return the corresponding pin number
 */
-uint8_t pcf8574::getPort(String gpioX)
+uint8_t pcf8574::getGPIOpin(String gpioX)
 {
 uint8_t gport;
 
