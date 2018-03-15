@@ -11,9 +11,9 @@
 extern "C" {
 #endif
 
-extern void testCount(pcf8574 *);
-extern void testShift(pcf8574 *);
-extern bool testRead(pcf8574 *, bool);
+extern void testCount(uint8_t, pcf8574 *);
+extern void testShift(uint8_t, pcf8574 *);
+extern bool testRead(uint8_t, pcf8574 *, bool);
 extern const char *byteToBin(uint8_t);
 
 #ifdef __cplusplus

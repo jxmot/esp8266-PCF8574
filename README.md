@@ -121,8 +121,18 @@ void setup()
     // work on an ESP-01.
     // 0x20 - the I2C address of the first device (swtiches)
     // 0x21 - the I2C address of the second device (LEDs)
-    p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
-    p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
+    p_pcf8574 = new pcf8574("GPIO0", "GPIO2");
+    
+    // NOTE : Regarding interrupts it is only necessary to pass the 
+    // address to the interrupt handler one time. It is up to the
+    // client to decide which devices to read when an interrupt occurs.
+    // However it is probably best to read all inputs on all devices 
+    // that are attached to the I2C bus when an interrupt happens.
+    p_pcf8574->createDevice(0x20, intrHandler);
+
+    // typically when creating a device without an interrupt handler
+    // it would mean that this device is dedicated for output
+    p_pcf8574->createDevice(0x21);
 }
 
 ```
@@ -155,7 +165,7 @@ There are three test functions found in `pcf8574-test.h / .c` -
     * `void testShift(pcf8574 *)` - Writes a binary pattern to the LEDs, shifts a single bit from LSB to MSB.
     
 Where :
-* `pcf8574 *` is a pointer to a `pcf8574` object. It would have been created within `setup()`. See [Multiple Devices](#multiple-devices) for additional information.
+* `pcf8574*` is a pointer to a `pcf8574` object. It would have been created within `setup()`. See [Multiple Devices](#multiple-devices) for additional information.
 * `bool` is the current interrupt flag. The `testRead()` function will use it to determine if the inputs should be read. For that to happen `intrFlag` must be `true`. The function also returns a *new* value for the interrupt flag. That value is determined by checking `pcf8574->intrenabled`, if it is `true` then the interrupt flag is reset to `false`. Otherwise the function will return `true`. Here is some example code - 
 
 When the interrupt occurs the flag(**`intrFlag`**) is set to true -
@@ -176,7 +186,7 @@ Then in `loop()` the flag is passed to `testRead()` and checked there -
 And inside of `testRead()` - 
 
 ```
-bool testRead(pcf8574 *p_pcf8574, bool intr) 
+bool testRead(uint8_t address, pcf8574 *p_pcf8574, bool intr) 
 {
 bool iflag = false;
 static uint8_t lastpinval = 0;
@@ -185,14 +195,14 @@ int err = 0;
 
     // save the state of the interrupt flag and test for true
     if((iflag = intr) == true) {
-        pinval = p_pcf8574->read8574();
+        pinval = p_pcf8574->read8574(address);
         // don't clear the flag unless interrupts have been enabled
-        if(p_pcf8574->intrenabled == true) iflag = false;
+        if(p_pcf8574->isIntrEn(address) == true) iflag = false;
         if(lastpinval != pinval) {
             Serial.println("testRead - val : " + String(byteToBin(pinval)) + " last : " + String(byteToBin(lastpinval)));
             lastpinval = pinval;
         }
-        if((err = p_pcf8574->lastError()) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
+        if((err = p_pcf8574->lastError(address)) != PCF857x_OK) Serial.println("testRead - ERROR = " + String(err));
     }
     // return the next interrupt flag state
     return iflag;
@@ -206,8 +216,7 @@ Depending on the ESP8266 platform you're using the only thing that might require
 ```
     // Change "GPIO0" and "GPIO2" to what is best suited for
     // your ESP8266 platform - 
-    p_pcf8574_rd = new pcf8574("GPIO0", "GPIO2", 0x20, intrHandler);
-    p_pcf8574_wr = new pcf8574("GPIO0", "GPIO2", 0x21);
+    p_pcf8574 = new pcf8574("GPIO0", "GPIO2");
 ```
 
 # Future
