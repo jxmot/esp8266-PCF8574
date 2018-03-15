@@ -38,27 +38,29 @@ const GPIOPIN pcf8574::gpiopins[] = {
 /*
     Class Constructor - 
 */
-pcf8574::pcf8574(String pinSDA, String pinSCL, uint8_t address, void (*ihandler)())
+pcf8574::pcf8574(String pinSDA, String pinSCL)
 {
     p_pcf857x = NULL;
     intrenabled = false;
+    i2cready = false;
 
-    if(initI2C(pinSDA, pinSCL) == true) {
-        if(createDevice(address)) initIntr(ihandler);
-    }
+    initI2C(pinSDA, pinSCL);
 }
 
 /*
     Create a device but first determine if it attached
     to the I2C bus.
 */
-bool pcf8574::createDevice(uint8_t address)
+bool pcf8574::createDevice(uint8_t address, void (*ihandler)())
 {
 bool bRet = false;
 
-    if(p_pcf857x == NULL) {
-        if((bRet = checkForDevice(address)) == true) {
-            p_pcf857x = new PCF857x(address, &Wire);
+    if(i2cready == true) {
+        if(devmap.count(address) == 0) {
+            if((bRet = checkForDevice(address)) == true) {
+                devmap[address] = new PCF857x(address, &Wire);
+                initIntr(address, ihandler);
+            }
         }
     }
     return bRet;
@@ -67,31 +69,31 @@ bool bRet = false;
 /*
     Read 8 bits at a time
 */
-uint8_t pcf8574::read8574(uint8_t pin) 
+uint8_t pcf8574::read8574(uint8_t address, uint8_t pin) 
 {
-    if(p_pcf857x != NULL) {
-        if(pin == 99) return p_pcf857x->read8();
-        else return p_pcf857x->read(pin);
+    if(devmap.count(address) == 1) {
+        if(pin == 99) return devmap[address]->read8();
+        else return devmap[address]->read(pin);
     }else return 0xFF;
 }
 
 /*
     Write up to 8 bits at a time
 */
-void pcf8574::write8574(uint8_t val, uint8_t pin)
+void pcf8574::write8574(uint8_t address, uint8_t val, uint8_t pin)
 {
-    if(p_pcf857x != NULL) {
-        if(pin == 99) p_pcf857x->write8(val);
-        else p_pcf857x->write(pin, val);
+    if(devmap.count(address) == 1) {
+        if(pin == 99) devmap[address]->write8(val);
+        else devmap[address]->write(pin, val);
     }
 }
 
 /* 
     return the last know error in the PCF857x class
 */
-int pcf8574::lastError() 
+int pcf8574::lastError(uint8_t address) 
 {
-    if(p_pcf857x != NULL) return p_pcf857x->lastError();
+    if(devmap.count(address) == 1) return devmap[address]->lastError();
     else return -1;
 }
 
@@ -100,15 +102,16 @@ int pcf8574::lastError()
     pointer to an interrupt handler was passed in.
     
 */
-void pcf8574::initIntr(void (*ihandler)())
+void pcf8574::initIntr(uint8_t address, void (*ihandler)())
 {
 uint8_t intrpin = getGPIOpin("GPIO3");
 
-    if(p_pcf857x != NULL) {
+    if(devmap.count(address) == 1) {
+        PCF857x *p_pcf857x = devmap[address];
         if(ihandler == NULL) {
             p_pcf857x->begin();
             p_pcf857x->resetInterruptPin();
-            intrenabled = false;
+            intmap[address] = false;
         } else {
             // set up the serial port so that we can use the GPIO 
             // pin for detecting an interrupt from the PCF8574
@@ -118,10 +121,20 @@ uint8_t intrpin = getGPIOpin("GPIO3");
             pinMode(intrpin, FUNCTION_3);
             pinMode(intrpin, INPUT_PULLUP);
             p_pcf857x->resetInterruptPin();
-            intrenabled = true;
+            intmap[address] = true;
             attachInterrupt(digitalPinToInterrupt(intrpin), ihandler, FALLING);
         }
     }
+}
+
+bool pcf8574::isIntrEn(uint8_t address)
+{
+bool bRet = false;
+
+    if(devmap.count(address) == 1) {
+        bRet = intmap[address];
+    }
+    return bRet;
 }
 
 /*
@@ -137,7 +150,7 @@ bool bRet = false;
 
     if((sdapin != 99) && (sclpin != 99)) {
         Wire.begin(sdapin, sclpin);
-        bRet = true;
+        i2cready = bRet = true;
     }
     return bRet;
 }
