@@ -159,12 +159,13 @@ The `ICACHE_RAM_ATTR` tells the linker to place the function into RAM instead of
 There are three test functions found in `pcf8574-test.h / .c` - 
 
 * Read test - 
-    * `bool testRead(pcf8574 *, bool) ` - Reads the state of the buttons, displays it on the console and returns the new state of the interrupt flag. 
+    * `bool testRead(uint8_t, pcf8574 *, bool) ` - Reads the state of the buttons, displays it on the console and returns the new state of the interrupt flag. 
 * Write test - 
-    * `void testCount(pcf8574 *)` - Writes a binary pattern to the LEDs, and counts from 0 to 15 (`0000b` to `1111b`).
-    * `void testShift(pcf8574 *)` - Writes a binary pattern to the LEDs, shifts a single bit from LSB to MSB.
+    * `void testCount(uint8_t, pcf8574 *)` - Writes a binary pattern to the LEDs, and counts from 0 to 15 (`0000b` to `1111b`).
+    * `void testShift(uint8_t, pcf8574 *)` - Writes a binary pattern to the LEDs, shifts a single bit from LSB to MSB.
     
 Where :
+* `uint8_t` is the address of the I2C device to be accessed
 * `pcf8574*` is a pointer to a `pcf8574` object. It would have been created within `setup()`. See [Multiple Devices](#multiple-devices) for additional information.
 * `bool` is the current interrupt flag. The `testRead()` function will use it to determine if the inputs should be read. For that to happen `intrFlag` must be `true`. The function also returns a *new* value for the interrupt flag. That value is determined by checking `pcf8574->intrenabled`, if it is `true` then the interrupt flag is reset to `false`. Otherwise the function will return `true`. Here is some example code - 
 
@@ -180,7 +181,7 @@ void ICACHE_RAM_ATTR intrHandler()
 Then in `loop()` the flag is passed to `testRead()` and checked there - 
 
 ```
-    intrFlag = testRead(p_pcf8574_rd, intrFlag);
+    intrFlag = testRead(address, p_pcf8574, intrFlag);
 ```
 
 And inside of `testRead()` - 
