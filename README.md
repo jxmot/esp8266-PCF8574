@@ -109,10 +109,7 @@ That meant that I could have two individual PCF8574 *objects* and manage them se
 ```
 #include "pcf8574.h"
 
-// pointers to specific I2C device objects, in this sketch one
-// is for reading switches and the other one toggles LEDs
-pcf8574 *p_pcf8574_rd = NULL;
-pcf8574 *p_pcf8574_wr = NULL;
+pcf8574 *p_pcf8574 = NULL;
 
 // setup() example -
 void setup()
@@ -127,7 +124,9 @@ void setup()
     // address to the interrupt handler one time. It is up to the
     // client to decide which devices to read when an interrupt occurs.
     // However it is probably best to read all inputs on all devices 
-    // that are attached to the I2C bus when an interrupt happens.
+    // that are attached to the I2C bus when an interrupt happens. This
+    // is because reading the inputs will automatically clear the 
+    // interrupt on the PCF8574 chip.
     p_pcf8574->createDevice(0x20, intrHandler);
 
     // typically when creating a device without an interrupt handler
