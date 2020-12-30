@@ -282,5 +282,5 @@ In addition to regular old dart games I think I'll add some of these features al
 
 Use multiple presence sensors to determine occupancy of a space, or track a pet's movements within the monitored space. It's likely that I'll use sensors similar to what I used in my [RCWL-0516 project](https://github.com/jxmot/ESP8266-RCWL0516).
 
-
-
+---
+<img src="http://webexperiment.info/extcounter/mdcount.php?id=esp8266-PCF8574">
